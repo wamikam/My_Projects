@@ -1,0 +1,294 @@
+Sentiment Analysis for Social Media Data
+Social Media Data like Facebook, Twitter, blogs, etc. is currently growing in an exploding rate. Automated sentiment analysis techniques can be extremely helpful to mine this ever-increasing data and extract actionable insights in real-time
+
+R code-
+#Install and load the relevant packages
+install.packages("tm")
+install.packages("SnowballC")
+install.packages("wordcloud")
+install.packages("RColorBrewer")
+install.packages("ggplot2")
+
+library(wordcloud)
+library(tm) # Framework for text mining.
+library(SnowballC) # Provides wordStem() for stemming.
+library(RColorBrewer) # Generate palette of colours for plots.
+library(ggplot2) # Plot word frequencies
+
+#Import all the text files in the system
+setwd("C:/Users/VIVEK/Desktop/Sampletestdata")
+cname <- file.path(".", "corpus")
+cname
+dir(cname)
+length(dir(cname))
+docs <- Corpus(DirSource(cname))
+docs
+inspect(docs[20])
+
+# Curate the data imported from the text files using relevant transformations 
+#Create a custom function for content_transformer() that can handle cleansing of text blocks with #punctuation such as: (words should not get merged)
+toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+docs <- tm_map(docs, removePunctuation)
+inspect(docs[20])
+
+dtm <- TermDocumentMatrix(docs)
+m<-as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 10)
+
+dtm
+class(dtm)
+dim(dtm)
+freq <- colSums(as.matrix(dtm))
+length(freq)
+freq <- sort(colSums(as.matrix(dtm)), decreasing=TRUE)
+head(freq, 14)
+length(freq)
+
+#Create a histogram of words with frequency more than 110
+e<-which(freq>110)
+hist(e)
+
+#Create a colored word cloud of most frequent words in the corpus 
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+#Create custom dictionary of 10 positive and 10 negative words
+plist<-inspect(DocumentTermMatrix(docs,list(dictionary = c("advice", "yes", "big","expensive","important","external","salient","right","pleasure","power"))))
+nlist<-inspect(DocumentTermMatrix(docs,list(dictionary = c("nothing", "small", "avoid","reduce","risk","messy","blame","not","no","divergent"))))
+Output-
+ 
+
+
+
+
+ 
+> 
+> dtm <- TermDocumentMatrix(docs)
+> m<-as.matrix(dtm)
+> v <- sort(rowSums(m),decreasing=TRUE)
+> d <- data.frame(word = names(v),freq=v)
+> head(d, 10)
+     word freq
+the   the 3250
+that that 1287
+and   and 1219
+are   are  618
+this this  574
+for   for  470
+with with  386
+have have  330
+you   you  325
+they they  313
+> 
+> dtm
+<<TermDocumentMatrix (terms: 6653, documents: 31)>>
+Non-/sparse entries: 18948/187295
+Sparsity           : 91%
+Maximal term length: 56
+Weighting          : term frequency (tf)
+> class(dtm)
+[1] "TermDocumentMatrix"    "simple_triplet_matrix"
+> dim(dtm)
+[1] 6653   31
+> freq <- colSums(as.matrix(dtm))
+> length(freq)
+[1] 31
+> freq <- sort(colSums(as.matrix(dtm)), decreasing=TRUE)
+> head(freq, 14)
+         MakingSenseOfSensemaking.txt 
+                                 5030 
+       FromInformationToKnowledge.txt 
+                                 3364 
+MakingSenseOfOrganizationalChange.txt 
+                                 3131 
+   BeyondEntitiesAndRelationships.txt 
+                                 2662 
+     EmergentDesignInEnterpriseIT.txt 
+                                 2598 
+     TheEssenceOfEntrepreneurship.txt 
+                                 2420 
+               RoutinesAndReality.txt 
+                                 1947 
+          ThreeTypesOfUncertainty.txt 
+                                 1791 
+                 SixHeresiesForBI.txt 
+                                 1567 
+             ConditionsOverCauses.txt 
+                                 1504 
+     SherlockHolmesFailedProjects.txt 
+                                 1360 
+          sherlockHolmesMgmtFetis.txt 
+                                 1315 
+       ProfessionalsOrPoliticians.txt 
+                                 1294 
+            TheConsultantsDilemma.txt 
+                                 1293 
+
+> length(freq)
+[1] 31
+> 
+> #Create a histogram of words with frequency more than 110
+> e<-which(freq>110)
+> hist(e)
+> 
+> #Create a colored word cloud of most frequent words in the corpus 
+> set.seed(1234)
+> wordcloud(words = d$word, freq = d$freq, min.freq = 1,
++           max.words=200, random.order=FALSE, rot.per=0.35, 
++           colors=brewer.pal(8, "Dark2"))
+> 
+> #Create custom dictionary of 10 positive and 10 negative words
+> inspect(DocumentTermMatrix(docs,plist(dictionary = c("that", "with", "have"))))
+Error in stopifnot(is.list(control)) : could not find function "plist"
+> inspect(DocumentTermMatrix(docs,nlist(dictionary = c("that", "with", "have"))))
+Error in stopifnot(is.list(control)) : could not find function "nlist"
+> plist<-inspect(DocumentTermMatrix(docs,list(dictionary = c("that", "with", "have"))))
+<<DocumentTermMatrix (documents: 31, terms: 3)>>
+Non-/sparse entries: 87/6
+Sparsity           : 6%
+Maximal term length: 4
+Weighting          : term frequency (tf)
+
+                                                       Terms
+Docs                                                    have
+  Afile.txt                                                0
+  BeyondEntitiesAndRelationships.txt                      11
+  bigdata.txt                                              1
+  ConditionsOverCauses.txt                                 9
+  EmergentDesignInEnterpriseIT.txt                        28
+  FromInformationToKnowledge.txt                          17
+  FromTheCoalface.txt                                      2
+  HeraclitusAndParmenides.txt                              8
+  IroniesOfEnterpriseIT.txt                                9
+  MakingSenseOfOrganizationalChange.txt                   28
+  MakingSenseOfSensemaking.txt                            37
+  ObjectivityAndTheEthicalDimensionOfDecisionMaking.txt    4
+  OnTheInherentAmbiguitiesOfManagingProjects.txt           3
+  OrganisationalSurprise.txt                              13
+  ProfessionalsOrPoliticians.txt                          20
+  RitualsInInformationSystemDesign.txt                     6
+  RoutinesAndReality.txt                                   8
+  ScapegoatsAndSystems.txt                                 4
+  SherlockHolmesFailedProjects.txt                        12
+  sherlockHolmesMgmtFetis.txt                             18
+  SixHeresiesForBI.txt                                     4
+  SixHeresiesForEnterpriseArchitecture.txt                 6
+  TheArchitectAndTheApparition.txt                        22
+  TheCloudAndTheGrass.txt                                  0
+  TheConsultantsDilemma.txt                                8
+  TheDangerWithin.txt                                      7
+  TheDilemmasOfEnterpriseIT.txt                            7
+  TheEssenceOfEntrepreneurship.txt                        18
+  ThreeTypesOfUncertainty.txt                              8
+  TOGAFOrNotTOGAF.txt                                     10
+  UnderstandingFlexibility.txt                             2
+                                                       Terms
+Docs                                                    that
+  Afile.txt                                                0
+  BeyondEntitiesAndRelationships.txt                     113
+  bigdata.txt                                              0
+  ConditionsOverCauses.txt                                47
+  EmergentDesignInEnterpriseIT.txt                        75
+  FromInformationToKnowledge.txt                          69
+  FromTheCoalface.txt                                     20
+  HeraclitusAndParmenides.txt                             43
+  IroniesOfEnterpriseIT.txt                               30
+  MakingSenseOfOrganizationalChange.txt                  102
+  MakingSenseOfSensemaking.txt                           156
+  ObjectivityAndTheEthicalDimensionOfDecisionMaking.txt   15
+  OnTheInherentAmbiguitiesOfManagingProjects.txt          13
+  OrganisationalSurprise.txt                              38
+  ProfessionalsOrPoliticians.txt                          21
+  RitualsInInformationSystemDesign.txt                    44
+  RoutinesAndReality.txt                                  51
+  ScapegoatsAndSystems.txt                                26
+  SherlockHolmesFailedProjects.txt                        39
+  sherlockHolmesMgmtFetis.txt                             27
+  SixHeresiesForBI.txt                                    45
+  SixHeresiesForEnterpriseArchitecture.txt                38
+  TheArchitectAndTheApparition.txt                        24
+  TheCloudAndTheGrass.txt                                  0
+  TheConsultantsDilemma.txt                               34
+  TheDangerWithin.txt                                     35
+  TheDilemmasOfEnterpriseIT.txt                           22
+  TheEssenceOfEntrepreneurship.txt                        67
+  ThreeTypesOfUncertainty.txt                             47
+  TOGAFOrNotTOGAF.txt                                     20
+  UnderstandingFlexibility.txt                            26
+                                                       Terms
+Docs                                                    with
+  Afile.txt                                                0
+  BeyondEntitiesAndRelationships.txt                      14
+  bigdata.txt                                              1
+  ConditionsOverCauses.txt                                 7
+  EmergentDesignInEnterpriseIT.txt                        25
+  FromInformationToKnowledge.txt                          23
+  FromTheCoalface.txt                                     16
+  HeraclitusAndParmenides.txt                             13
+  IroniesOfEnterpriseIT.txt                               14
+  MakingSenseOfOrganizationalChange.txt                   26
+  MakingSenseOfSensemaking.txt                            52
+  ObjectivityAndTheEthicalDimensionOfDecisionMaking.txt    5
+  OnTheInherentAmbiguitiesOfManagingProjects.txt          11
+  OrganisationalSurprise.txt                               9
+  ProfessionalsOrPoliticians.txt                          13
+  RitualsInInformationSystemDesign.txt                     6
+  RoutinesAndReality.txt                                  12
+  ScapegoatsAndSystems.txt                                 2
+  SherlockHolmesFailedProjects.txt                        13
+  sherlockHolmesMgmtFetis.txt                             11
+  SixHeresiesForBI.txt                                    14
+  SixHeresiesForEnterpriseArchitecture.txt                 9
+  TheArchitectAndTheApparition.txt                         9
+  TheCloudAndTheGrass.txt                                  1
+  TheConsultantsDilemma.txt                               11
+  TheDangerWithin.txt                                     10
+  TheDilemmasOfEnterpriseIT.txt                            9
+  TheEssenceOfEntrepreneurship.txt                        30
+  ThreeTypesOfUncertainty.txt                              9
+  TOGAFOrNotTOGAF.txt                                      3
+  UnderstandingFlexibility.txt                             8
+> plist<-inspect(DocumentTermMatrix(docs,list(dictionary = c("advice", "yes", "big","expensive","important","external","salient","right","pleasure","power"))))
+<<DocumentTermMatrix (documents: 31, terms: 10)>>
+Non-/sparse entries: 89/221
+Sparsity           : 71%
+Maximal term length: 9
+Weighting          : term frequency (tf)
+
+
+> nlist<-inspect(DocumentTermMatrix(docs,list(dictionary = c("nothing", "small", "avoid","reduce","risk","messy","blame","not","no","divergent"))))
+<<DocumentTermMatrix (documents: 31, terms: 10)>>
+Non-/sparse entries: 81/229
+Sparsity           : 74%
+Maximal term length: 9
+Weighting          : term frequency (tf)
+
+                                                       Terms
+Docs                                                    avoid
+  Afile.txt                                                 0
+  BeyondEntitiesAndRelationships.txt                        0
+  bigdata.txt                                               0
+  ConditionsOverCauses.txt                                  0
+  EmergentDesignInEnterpriseIT.txt                          1
+  FromInformationToKnowledge.txt                            0
+  FromTheCoalface.txt                                       0
+  HeraclitusAndParmenides.txt                               0
+  IroniesOfEnterpriseIT.txt                                 3
+  MakingSenseOfOrganizationalChange.txt                     0
+  MakingSenseOfSensemaking.txt                              0
+  ObjectivityAndTheEthicalDimensionOfDecisionMaking.txt     1
+  OnTheInherentAmbiguitiesOfManagingProjects.txt            0
+  OrganisationalSurprise.txt                                0
+  ProfessionalsOrPoliticians.txt                            1
+  RitualsInInformationSystemDesign.txt                      0
+  RoutinesAndReality.txt                                    0
+  ScapegoatsAndSystems.txt                                  1
+  SherlockHolmesFailedProjects.txt                          0
+  sherlockHolmesMgmtFetis.txt                               0
+  SixHeresiesForBI.txt                                      0
+  SixHeresiesForEnterpriseArchitecture.txt                  0
+
