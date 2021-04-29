@@ -1,0 +1,42 @@
+#set working  directory
+setwd("C:/Users/VIVEK/Desktop/BAP-R")
+
+#import data from csv file(xls file was not getting opened so converted it to csv format) and #attaching it
+titanic <- read.csv("Titanic1.csv",stringsAsFactors = FALSE)
+attach(titanic)
+
+#dividing dataset into 2 random groups in ratio 70:30
+tit1= sample(2, nrow(titanic), replace = T, prob = c(0.7,0.3))
+#training data
+datatrain=titanic[tit1==1, 1:12]
+#testing data
+datatest=titanic[tit1==2, 1:12]
+
+#converting sex column to new column gender with indicator function
+#and adding gender column to training dataset
+newtrain<-cbind(datatrain,gender=ifelse(datatrain$Sex=="female",1,0))
+
+#Fitting model
+model=glm(Survived ~ Pclass + Age + SibSp + Parch + gender,family=binomial(link="logit"),data=newtrain)
+#to transform into the probability, do the following transformation
+#exp(predict(model, newdata = newtrain)) / 
+#  (1 + exp(predict(model, newdata = newtrain)))
+summary(model)
+
+#adding gender column to test dataset
+datatest1<-cbind(datatest,gender=ifelse(datatest$Sex=="female",1,0))
+
+#predicting model for test dataset
+p.hat = predict.glm(model,newdata=datatest1,type="response")
+
+#making table of survived and deceased in reality
+table(datatest1$Survived)
+
+#giving threshold value of 0.5
+p.hat[p.hat<=0.5]<-0
+p.hat[p.hat>0.5]<-1
+
+p.hat
+
+#making table of survived and deceased after prediction
+table(p.hat)
