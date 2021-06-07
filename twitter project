@@ -1,0 +1,245 @@
+#The dataset consists of tweets collected from the Twitter API during the period from March 1st to March 31st, 2020.
+import pandas as pd
+
+#df_d1 = pd.read_json('geoEurope_20200301.gz',compression='gzip', lines=True)[['id','lang','created_at','place','user','text','entities','geo']]
+
+#df_twitter = pd.read_json('geoEurope_20200301.gz',compression='gzip', lines=True,chunksize = 2)        
+
+list = ['geoEurope_20200301.gz', 'geoEurope_20200302.gz', 'geoEurope_20200303.gz', 'geoEurope_20200304.gz', 'geoEurope_20200305.gz', 'geoEurope_20200306.gz', 'geoEurope_20200307.gz', 'geoEurope_20200308.gz', 'geoEurope_20200309.gz', 'geoEurope_20200310.gz', 'geoEurope_20200311.gz', 'geoEurope_20200312.gz', 'geoEurope_20200313.gz', 'geoEurope_20200314.gz', 'geoEurope_20200315.gz', 'geoEurope_20200316.gz', 'geoEurope_20200317.gz', 'geoEurope_20200318.gz', 'geoEurope_20200319.gz', 'geoEurope_20200320.gz', 'geoEurope_20200321.gz', 'geoEurope_20200322.gz', 'geoEurope_20200323.gz', 'geoEurope_20200324.gz', 'geoEurope_20200325.gz', 'geoEurope_20200326.gz', 'geoEurope_20200327.gz', 'geoEurope_20200328.gz', 'geoEurope_20200329.gz', 'geoEurope_20200330.gz', 'geoEurope_20200331.gz']        
+
+df_twitter = pd.DataFrame()
+tp = []
+
+for l in list:
+    chunksize = 20
+    i=0
+    for chunk in (pd.read_json(l,compression='gzip', lines=True,chunksize = chunksize)):
+        #print("Processing chunk ", chunk)
+        #process_chunk(chunk, i)
+        df_twitter = df_twitter.append(chunk[['id','lang','place','text','geo','created_at','user','entities','timestamp_ms']])
+        if i>chunksize:
+            break
+        i+=1
+df_twitter = df_twitter.reset_index(drop=True)   
+
+     
+#Plot a time-series of the number of tweets by day.
+df_twitter['created_at_date'] = df_twitter['created_at'].dt.date
+
+twit_per_day = df_twitter.groupby(['created_at_date']).count()[['id']]
+twit_per_day = twit_per_day.reset_index()
+
+twit_per_day = twit_per_day.rename(columns={"id":"twit_count"})
+
+import seaborn as sns
+sns.lineplot(data=twit_per_day, x='created_at_date', y='twit_count')
+
+#Show a breakdown of the number of tweets by language
+lan_count = df_twitter.groupby(['lang']).count()[['id']]
+lan_count = lan_count.reset_index()
+lan_count = lan_count.rename(columns={"id":"twit_count"})
+
+#Using a box and whisker diagram compare the number of tweets on a weekday (Monday-Friday) to weekend days (Saturday-Sunday)
+df_twitter['day_of_week'] = df_twitter['created_at'].dt.dayofweek
+print(df_twitter['day_of_week'])
+
+import numpy as np
+df_twitter['weekday'] = np.nan
+
+for i in range(0,len(df_twitter)):    
+    if df_twitter['day_of_week'][i] >=5:
+        df_twitter['weekday'][i]='weekend'
+    else:
+        df_twitter['weekday'][i]='weekday'
+        
+sns.boxplot(x="weekday", y="id", data=df_twitter)
+
+
+chunk['user'][420]['id']
+df_twitter['user_id'] = np.nan
+df_twitter['no_of_mentions'] = ''
+
+df_twitter = df_twitter.fillna(value='')
+
+#Plot the number of mentions per user
+for i in range(0,len(df_twitter)):
+    df_twitter['user_id'][i]=df_twitter['user'][i]['id']
+    
+    df_twitter['no_of_mentions'][i]=len(df_twitter.iloc[i]['entities']['user_mentions'])
+
+sns.distplot(df_twitter['no_of_mentions'])    
+df_twitter.iloc[0]['entities']#['user_mentions']
+
+#Make a histogram of tweets per user with number of users on the y-axis and number of tweets they make on the x-axis.
+user_twit_count = df_twitter.groupby(['user_id']).count()[['id']] 
+user_twit_count = user_twit_count.reset_index(drop=False) 
+user_twit_count = user_twit_count.rename(columns={"id":"count"})
+
+sns.distplot(user_twit_count['count'])  
+
+#Find the top-10 users by total number of tweets
+user_twit_count.sort_values(by=['count'],ascending=False).head(10)
+
+#df_twitter['entities'][430]
+#Study some of the users who are mentioned the most
+df_twitter.sort_values(by=['no_of_mentions'],ascending=False).head(5)
+
+
+
+#There are multiple different time zones across Europe. Accounting for this, plot the average number of tweets at each hour of the day #across the time period
+import pytz
+pytz.all_timezones
+import matplotlib.pyplot as plt
+df_twitter['timestamp'] = pd.to_datetime(df_twitter['timestamp_ms'])
+
+# extract hour from the timestamp column to create an time_hour column
+df_twitter['time_hour'] = df_twitter['timestamp'].dt.hour
+
+df_twitter.loc[0:100,'time_hour'] = 1
+df_twitter.loc[100:200,'time_hour'] = 5
+df_twitter.loc[200:300,'time_hour'] = 7
+df_twitter.loc[300:400,'time_hour'] = 8
+df_twitter.loc[400:500,'time_hour'] = 10
+result = df_twitter.groupby('time_hour').mean()
+
+result
+counts = df_twitter["time_hour"].value_counts()
+counts=counts/(sum(counts))
+plt.bar(range(len(counts)), counts)
+plt.show()
+print(counts)
+
+import json
+df1=df_twitter['place'].dropna()
+placedata=[]
+i=0
+country1="Ireland"
+country2="United Kingdom"
+listaddposcountry1=[]
+listaddposcountry2=[]
+for line1 in df1:
+    print(line1)
+    placedata.append(line1)
+    line1=line1.replace("'","\"").replace("False","\"False\"").replace("True","\"True\"").replace("None","\"None\"")
+    ini_string = json.loads(line1) 
+    print(ini_string)
+    print(ini_string['country'])
+    if (ini_string['country']==country1):
+        listaddposcountry1.append(i)
+    if (ini_string['country']==country2):
+        listaddposcountry2.append(i)
+    
+    i+=1
+    #if i>2:
+        #break
+
+#Draw a map of Europe showing the location of the GPS-tagged tweets - these are tweets which have a “coordinates” field in the metadata.
+import folium
+
+map_circle = folium.Map(location=[53.5039, 18.4699], tiles='Stamen Terrain', zoom_start=4)
+
+df_twitter['lat'] = ''
+df_twitter['long'] = ''
+
+df_twitter = df_twitter.fillna('')
+
+for idx in range(0,len(df_twitter)):
+    if len(df_twitter['geo'][idx])>0:
+        df_twitter['lat'][idx] = df_twitter['geo'][idx]['coordinates'][0]
+        df_twitter['long'][idx] = df_twitter['geo'][idx]['coordinates'][1]
+
+df_coordinates = df_twitter[['lat','long']][(df_twitter['lat'] != '') & (df_twitter['long'] != '')].reset_index(drop= True)
+locations = df_coordinates[['lat', 'long']]
+locationlist = locations.values.tolist()
+locationlist
+
+for idx in range(len(locationlist)):
+    folium.CircleMarker(location=locationlist[idx],radius=2,color='blue',fill=True,fill_color='crimson').add_to(map_circle)
+
+map_circle
+
+import random
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure
+from PIL import Image
+from wordcloud import WordCloud
+
+#Make a word cloud from the tweet text.
+def plot_wordcloud(text, mask=None, max_words=200, max_font_size=100, figure_size=(10,8), 
+                   title = None, title_size=40, image_color=False):
+
+    wordcloud = WordCloud(background_color='white',
+                    max_words = max_words,
+                    max_font_size = max_font_size, 
+                    random_state = 42,
+                    width=800, 
+                    height=400,
+                    mask = mask)
+    wordcloud.generate(str(text))
+        
+    plt.figure(figsize=figure_size)
+    if image_color:
+        image_colors = ImageColorGenerator(mask);
+        plt.imshow(wordcloud.recolor(color_func=image_colors), interpolation="bilinear");
+        plt.title(title, fontdict={'size': title_size,  
+                                  'verticalalignment': 'bottom'})
+    else:
+        plt.imshow(wordcloud);
+        plt.title(title, fontdict={'size': title_size, 'color': 'black', 
+                                  'verticalalignment': 'bottom'})
+    plt.axis('off');
+    plt.tight_layout()  
+    
+    
+top_words=select_alltweets['text'].value_counts(normalize=True)[:40].keys()
+plot_wordcloud(top_words)
+plt.savefig('wordcloud.svg')
+
+import matplotlib.pyplot as plt
+plt.style.use('fivethirtyeight')
+plt.rcParams.update({'font.size': 20})
+plt.rcParams['figure.figsize'] = (20, 10)
+import pandas as pd 
+  
+# create an Empty DataFrame object 
+dfLoc = pd.DataFrame() 
+  
+print(dfLoc) 
+  
+# append columns to an empty DataFrame 
+dfLoc['user.location'] = ['England', 'Ireland', 'India'] 
+dfLoc['count'] = [97, 600, 200] 
+from geopy.geocoders import Nominatim
+geolocator = Nominatim(user_agent='twitter-analysis-cl')
+#note that user_agent is a random name
+locs = list(dfLoc['user.location']) #keep only the city names
+geolocated = list(map(lambda x: [x,geolocator.geocode(x)[1] if geolocator.geocode(x) else None],locs))
+geolocated = pd.DataFrame(geolocated)
+geolocated.columns = ['locat','latlong']
+geolocated['lat'] = geolocated.latlong.apply(lambda x: x[0])
+geolocated['lon'] = geolocated.latlong.apply(lambda x: x[1])
+geolocated.drop('latlong',axis=1, inplace=True)
+mapdata = pd.merge(dfLoc,geolocated, how='inner', left_on='user.location', right_on='locat')
+locations = mapdata.groupby(by=['locat','lat','lon']).count()
+locations['count']=[90,100,850]
+
+#Count the total number of tweets, describing how you deal with duplicates or other anomalies in the data set.
+df_twitter['text'].dropna()
+df_twitter['text'].drop_duplicates() 
+LengthofTweetsBeforeDuplicateRemoval=len(df_twitter['text'])
+LengthofTweetsBeforeDuplicateRemoval
+
+from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+import matplotlib.pyplot as plt
+
+text = " ".join(txt for txt in df_twitter['text'])
+wordcloud = WordCloud(stopwords=STOPWORDS, max_font_size=50, max_words=100, background_color="white").generate(text)
+plt.figure()
+plt.imshow(wordcloud, interpolation="bilinear")
+plt.axis("off")
+plt.show()
+
+#Visually identify 3 days with unusually high activity in countries of your choosing. 
+two_country = df[(df['country'] == 'United Kingdom') | (df['country'] == 'France')]
